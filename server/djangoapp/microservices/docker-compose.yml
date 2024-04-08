@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  sentianalyzer:
+    container_name: sentianalyzer
+    image: senti_analyzer
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
