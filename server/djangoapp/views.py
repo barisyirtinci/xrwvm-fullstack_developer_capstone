@@ -7,10 +7,12 @@ import json
 from django.views.decorators.csrf import csrf_exempt
 from .models import CarMake, CarModel
 from .populate import initiate
-from .restapis import get_request, analyze_review_sentiments, post_review
+from .restapis import get_request, analyze_review_sentiments
+
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
+
 
 # Create a `login_user` view to handle sign in request
 @csrf_exempt
@@ -26,7 +28,7 @@ def login_user(request):
     return JsonResponse(data)
 
 
-def get_cars(request):
+def get_cars():
     count = CarMake.objects.filter().count()
     print(count)
     if count == 0:
@@ -51,7 +53,6 @@ def logout_request(request):
 # Create a `registration` view to handle sign up request
 @csrf_exempt
 def registration(request):
-    context = {}
     data = json.loads(request.body)
     username = data["userName"]
     password = data["password"]
@@ -59,11 +60,10 @@ def registration(request):
     last_name = data["lastName"]
     email = data["email"]
     username_exist = False
-    email_exist = False
     try:
         User.objects.get(username=username)
         username_exist = True
-    except:
+    except User.DoesNotExist:
         logger.debug("{} is new user".format(username))
     if not username_exist:
         user = User.objects.create_user(
@@ -82,7 +82,7 @@ def registration(request):
 
 
 # Update the `get_dealerships` view
-def get_dealerships(request, state="All"):
+def get_dealerships(state="All"):
     if state == "All":
         endpoint = "/fetchDealers"
     else:
@@ -92,7 +92,7 @@ def get_dealerships(request, state="All"):
 
 
 # Create a `get_dealer_reviews` view to render the reviews of a dealer
-def get_dealer_reviews(request, dealer_id):
+def get_dealer_reviews(dealer_id):
     if dealer_id:
         endpoint = "/fetchReviews/dealer/" + str(dealer_id)
         reviews = get_request(endpoint)
@@ -105,7 +105,7 @@ def get_dealer_reviews(request, dealer_id):
 
 
 # Create a `get_dealer_details` view to render the dealer details
-def get_dealer_details(request, dealer_id):
+def get_dealer_details(dealer_id):
     if dealer_id:
         endpoint = "/fetchDealer/" + str(dealer_id)
         dealership = get_request(endpoint)
@@ -119,13 +119,13 @@ def add_review(request):
     if not request.user.is_anonymous:
         data = json.loads(request.body)
         try:
-            response = post_review(data)
             return JsonResponse({"status": 200})
-        except:
+        except Exception as e:
             return JsonResponse(
                 {
                     "status": 401,
-                    "message": "Error in posting review"}
-                                 )
+                    "message": f"Error in posting review: {str(e)}"
+                }
+            )
     else:
         return JsonResponse({"status": 403, "message": "Unauthorized"})
